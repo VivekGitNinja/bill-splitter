@@ -155,3 +155,72 @@ You must understand every line you submit. We check this with your video and in 
 5. Paste the repository link and the video link in the application form.
 
 We will run `pnpm install && pnpm check && pnpm typecheck && pnpm test` on your repository.
+
+## Decisions
+
+1. **Pay with one atomic conditional UPDATE, and keep the idempotency key on the share.** Paying runs `UPDATE shares SET paid_at, idempotency_key WHERE id = ? AND paid_at IS NULL`, so when two requests race for the same share exactly one of them changes a row. A retry with the same key then reads the stored key and returns the original result (200), while a different key gets 409. No separate payments table is needed, and there is no read-then-write window to double-pay through.
+2. **Split the bill once, at creation time, with leftover cents going to the earliest members.** Each share is `floor(total / n)` cents, and the first `total mod n` members (in the order they were added) get one extra cent, so the shares always add up to exactly `totalCents`. Computing the split once keeps reads simple and freezes each bill: adding a member later does not rewrite bills that already exist.
+3. **Money is integer cents everywhere; formatting happens only on screen.** The API, the database, and the split math never see a decimal, so rounding can never lose or invent a cent. The web page only converts cents to dollars for display (`$3.34`), never for storage or calculation.
+
+## Project notes
+
+Added while hardening the solution for real use. Nothing here changes the
+assignment's split or pay rules.
+
+### Architecture
+
+- `api/` — Hono on Cloudflare Workers, D1 (SQLite) via the `DB` binding.
+- `web/` — React + Vite + TanStack Router. The home id is kept in the URL
+  (`?home=<id>`) and in `localStorage`, so a reload or a shared link reopens
+  the same home.
+- `shared/` — the `Member`, `Share`, `Bill`, and `Balance` types, plus the
+  validation bounds (`MAX_NAME_LENGTH`, `MAX_TOTAL_CENTS`). Both sides
+  import them from `@bill-splitter/shared`, so the wire shapes cannot drift.
+
+### No auth, by design — home ids are bearer tokens
+
+There is deliberately no login. A home id is a random UUID, and anyone who
+knows it can see and change that home. Treat a home id like a password:
+do not post it publicly. This matches the assignment (no auth requirement),
+and no fake auth was added to pretend otherwise. A real multi-user version
+would need accounts and per-home membership checks.
+
+### Limits
+
+- Request bodies are capped at 16 KB (413 above that).
+- `POST /api/homes` and pay are rate-limited to 60 requests per minute per
+  client IP (429 above that), keyed on `CF-Connecting-IP`. Requests without
+  a client IP (local dev, tests) are not limited.
+- Names and titles are trimmed and capped at 200 characters; `totalCents`
+  must be a safe integer between 1 and 100,000,000.
+- Duplicate member names in one home are rejected with 409.
+
+### Pagination
+
+`GET /api/homes/:homeId/members` and `GET /api/homes/:homeId/bills` accept
+`?limit=` (default 50, max 100) and `?cursor=` (the `nextCursor` from the
+previous page, `null` when there is no next page).
+
+### Errors and logging
+
+Every error is JSON `{ "error": "message" }`. A 500 also carries an
+`errorId` that matches one log line, and every request is logged with its
+method, path, status, duration, and request id.
+
+### Environment and deploy
+
+- `VITE_API_URL` — the deployed Worker URL for the web build (see
+  `.env.example`). Empty means the Vite dev proxy.
+- `pnpm migrate:remote` — apply D1 migrations to the remote database.
+- `pnpm deploy:api` — deploy the Worker (`wrangler deploy`).
+- `pnpm deploy:web` — build the web app and deploy it to Cloudflare Pages.
+- Deploy needs a Cloudflare account and the `CLOUDFLARE_API_TOKEN` /
+  `CLOUDFLARE_ACCOUNT_ID` secrets. `api/wrangler.jsonc` has `staging` and
+  `production` env blocks; the `database_id` values are still the
+  `local-only` placeholder — replace them with the real ids from
+  `wrangler d1 create` before the first remote deploy.
+- CI (`.github/workflows/ci.yml`) runs install, `pnpm check`, `pnpm
+  typecheck`, `pnpm test`, and `pnpm build` on push and pull requests.
+  `.github/workflows/deploy.yml` deploys on push to `main`.
+- Node 24 and pnpm 10 are pinned (`.nvmrc`, `packageManager` in
+  `package.json`). Dependabot checks npm and GitHub Actions weekly.

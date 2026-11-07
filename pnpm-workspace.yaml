@@ -1,6 +1,7 @@
 packages:
   - api
   - web
+  - shared
 allowBuilds:
   esbuild: true
   workerd: true

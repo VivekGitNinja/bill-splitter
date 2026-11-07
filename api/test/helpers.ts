@@ -1,15 +1,7 @@
 import { exports } from 'cloudflare:workers'
+import type { Bill, Member } from '@bill-splitter/shared'
 
-export type Share = { id: string; memberId: string; amountCents: number; paidAt: string | null }
-export type Bill = {
-  id: string
-  homeId: string
-  title: string
-  totalCents: number
-  shares: Share[]
-}
-export type Member = { id: string; homeId: string; name: string }
-export type Balance = { memberId: string; name: string; outstandingCents: number }
+export type { Balance, Bill, Member, Share } from '@bill-splitter/shared'
 
 export async function call<Body = unknown>(
   method: 'GET' | 'POST',
@@ -25,6 +17,24 @@ export async function call<Body = unknown>(
   )
   const text = await response.text()
   return { status: response.status, body: parseJson(text) as Body }
+}
+
+// Sends the body exactly as given (no JSON encoding), for tests that need a
+// malformed body, an oversized body, or a non-GET/POST method like OPTIONS.
+export async function callRaw(
+  method: 'GET' | 'POST' | 'OPTIONS',
+  path: string,
+  options: { body?: string; headers?: Record<string, string> } = {},
+) {
+  const response = await exports.default.fetch(
+    new Request(`http://localhost${path}`, {
+      method,
+      headers: { ...options.headers },
+      body: options.body,
+    }),
+  )
+  const text = await response.text()
+  return { status: response.status, body: parseJson(text) as unknown, headers: response.headers }
 }
 
 // A route that does not exist answers with plain text, so a failed parse gives null.

@@ -7,6 +7,9 @@
   "observability": {
     "enabled": true
   },
+  "vars": {
+    "ENVIRONMENT": "development"
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -14,5 +17,33 @@
       "database_id": "local-only",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+  "env": {
+    "staging": {
+      "vars": {
+        "ENVIRONMENT": "staging"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "bill-splitter-staging",
+          "database_id": "local-only",
+          "migrations_dir": "migrations"
+        }
+      ]
+    },
+    "production": {
+      "vars": {
+        "ENVIRONMENT": "production"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "bill-splitter",
+          "database_id": "local-only",
+          "migrations_dir": "migrations"
+        }
+      ]
+    }
+  }
 }
