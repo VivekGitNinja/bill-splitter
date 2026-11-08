@@ -27,15 +27,21 @@ see [Deploy status](#deploy-status).
 Screenshots from the live static demo (Walkthrough Demo group: Ana, Ben, Priya;
 Dinner ₹1,000 split 334 / 333 / 333).
 
-| Home dashboard | Group detail |
-| --- | --- |
-| <img src="docs/screenshots/01-home-dashboard.png" width="400" alt="Home dashboard: ₹666 still to settle, ₹1,000 spent, settle plan of 2 payments"> | <img src="docs/screenshots/02-group-detail.png" width="400" alt="Group detail: Ana gets back ₹666, Ben owes ₹333, Priya owes ₹333"> |
-| ₹666 still to settle · settle plan: 2 payments | Balances per member, gross (including zero) |
+**Home dashboard** — ₹666 still to settle · settle plan: 2 payments
 
-| Insights | Activity feed |
-| --- | --- |
-| <img src="docs/screenshots/03-insights.png" width="400" alt="Insights: fairness dashboard showing who fronted more than they consumed"> | <img src="docs/screenshots/04-activity-feed.png" width="400" alt="Activity feed: every event with date and time, newest first"> |
-| Fairness — who fronted more than they consumed | Every event logged with date and time |
+<img src="docs/screenshots/01-home-dashboard.png" width="400" alt="Home dashboard: ₹666 still to settle, ₹1,000 spent, settle plan of 2 payments">
+
+**Group detail** — Balances per member, gross (including zero)
+
+<img src="docs/screenshots/02-group-detail.png" width="400" alt="Group detail: Ana gets back ₹666, Ben owes ₹333, Priya owes ₹333">
+
+**Insights** — Fairness — who fronted more than they consumed
+
+<img src="docs/screenshots/03-insights.png" width="400" alt="Insights: fairness dashboard showing who fronted more than they consumed">
+
+**Activity feed** — Every event logged with date and time, newest first
+
+<img src="docs/screenshots/04-activity-feed.png" width="400" alt="Activity feed: every event with date and time, newest first">
 
 ## What this repo implements
 
@@ -85,7 +91,7 @@ top of the assignment, as a client-side showcase. These live **only in the
 demo**, not in the API:
 
 - **Two-step UTR payment:** payer marks paid with a UPI transaction ID
-  (debt stays *Pending*), receiver confirms the money arrived, then a
+  (debt stays _Pending_), receiver confirms the money arrived, then a
   receipt shows Payment ID + UTR + both timestamps to the second. No other
   expense app verifies the money actually arrived.
 - Exact / percentage / shares splits, partial payments, recurring bills,
@@ -117,14 +123,14 @@ order). Full walkthrough with every constraint explained:
 
 ## API
 
-| Method | Endpoint | Success | Errors |
-| --- | --- | --- | --- |
-| `POST` | `/api/homes` | `201 { id, name }` | |
-| `POST` | `/api/homes/:homeId/members` | `201 { id, homeId, name }` | `404` home not found |
-| `POST` | `/api/homes/:homeId/bills` | `201 { id, homeId, title, totalCents, shares: [...] }` | `404` home not found · `422` bad total or no members |
-| `POST` | `/api/bills/:billId/shares/:shareId/pay` (header `Idempotency-Key`) | `200 { id, memberId, amountCents, paidAt }` | `400` key missing · `404` bill/share not found · `409` already paid, different key |
-| `GET` | `/api/homes/:homeId/balances` | `200 { balances: [{ memberId, name, outstandingCents }] }` | `404` home not found |
-| `GET` | `/api/homes/:homeId/members`, `/api/homes/:homeId/bills` | `200`, paginated | `404` home not found |
+| Method | Endpoint                                                            | Success                                                    | Errors                                                                             |
+| ------ | ------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `POST` | `/api/homes`                                                        | `201 { id, name }`                                         |                                                                                    |
+| `POST` | `/api/homes/:homeId/members`                                        | `201 { id, homeId, name }`                                 | `404` home not found                                                               |
+| `POST` | `/api/homes/:homeId/bills`                                          | `201 { id, homeId, title, totalCents, shares: [...] }`     | `404` home not found · `422` bad total or no members                               |
+| `POST` | `/api/bills/:billId/shares/:shareId/pay` (header `Idempotency-Key`) | `200 { id, memberId, amountCents, paidAt }`                | `400` key missing · `404` bill/share not found · `409` already paid, different key |
+| `GET`  | `/api/homes/:homeId/balances`                                       | `200 { balances: [{ memberId, name, outstandingCents }] }` | `404` home not found                                                               |
+| `GET`  | `/api/homes/:homeId/members`, `/api/homes/:homeId/bills`            | `200`, paginated                                           | `404` home not found                                                               |
 
 ## Run it
 
