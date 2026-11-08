@@ -21,7 +21,7 @@
     "deploy:web": "pnpm --filter bill-splitter-web build && pnpm --filter bill-splitter-api exec wrangler pages deploy ../web/dist --project-name bill-splitter-web"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.4",
+    "@biomejs/biome": "^2.6.5",
     "concurrently": "^10.0.6"
   }
 }
